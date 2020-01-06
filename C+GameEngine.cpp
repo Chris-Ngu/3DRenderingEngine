@@ -72,11 +72,11 @@ public:
             {1.0f, 0.0f, 1.0f,  0.0f, 0.0f, 0.0f,   1.0f, 0.0f, 0.0f},
         };
         // Projction matrix
-        float fNear = 0.1f;
-        float fFar = 1000.0f;
-        float fFov = 90.0f;
-        float fAspectRatio = (float)ScreenHeight() / (float)ScreenWidth();
-        float fFovRad = 1.0f / tanf(fFov / .05f / 180.0f * 3.14159f);
+		float fNear = 0.1f;
+		float fFar = 1000.0f;
+		float fFov = 90.0f;
+		float fAspectRatio = (float)ScreenHeight() / (float)ScreenWidth();
+		float fFovRad = 1.0f / tanf(fFov * 0.5f / 180.0f * 3.14159f);
 
         matProj.m[0][0] = fAspectRatio * fFovRad;
         matProj.m[1][1] = fFovRad;
@@ -103,7 +103,7 @@ public:
         matRotX.m[0][0] = 1;
         matRotX.m[1][1] = cosf(fTheta * 0.5f);
         matRotX.m[1][2] = sinf(fTheta * 0.5f);
-        matRotX.m[2][1] = -sinf(fTheta * .05f);
+        matRotX.m[2][1] = -sinf(fTheta * 0.5f);
         matRotX.m[2][2] = cosf(fTheta * 0.5f);
         matRotX.m[3][3] = 1;
 
