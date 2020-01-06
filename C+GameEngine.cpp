@@ -31,8 +31,9 @@ public :
 private:
     mesh meshCube;
     mat4x4 matProj;
+    float fTheta;
 
-    void MultiplyMatrixVector(vec3d& i, vec3d& o, mat4x4& m)
+    void MultiplyMatrixVector(vec3d &i, vec3d &o, mat4x4 &m)
     {
         o.x = i.x * m.m[0][0] + i.y * m.m[1][0] + i.z * m.m[2][0] + m.m[3][0];
         o.y = i.x * m.m[0][1] + i.y * m.m[1][1] + i.z * m.m[2][1] + m.m[3][1];
@@ -89,14 +90,43 @@ public:
     bool OnUserUpdate(float fFElapsedTime) override
     {
         Fill(0, 0, ScreenWidth(), ScreenHeight(), PIXEL_SOLID, FG_BLACK);
+        mat4x4 matRotZ, matRotX;
+        fTheta += 1.0f * fFElapsedTime;
+
+        matRotZ.m[0][0] = cosf(fTheta);
+        matRotZ.m[0][1] = sinf(fTheta);
+        matRotZ.m[1][0] = -sinf(fTheta);
+        matRotZ.m[1][1] = cosf(fTheta);
+        matRotZ.m[2][2] = 1;
+        matRotZ.m[3][3] = 1;
+
+        matRotX.m[0][0] = 1;
+        matRotX.m[1][1] = cosf(fTheta * 0.5f);
+        matRotX.m[1][2] = sinf(fTheta * 0.5f);
+        matRotX.m[2][1] = -sinf(fTheta * .05f);
+        matRotX.m[2][2] = cosf(fTheta * 0.5f);
+        matRotX.m[3][3] = 1;
 
         //draw Polygons/ triangles
         for (auto tri : meshCube.tris)
         {
-            triangle triProjected;
-            MultiplyMatrixVector(tri.p[0], triProjected.p[0], matProj);
-            MultiplyMatrixVector(tri.p[1], triProjected.p[1], matProj);
-            MultiplyMatrixVector(tri.p[2], triProjected.p[2], matProj);
+            triangle triProjected, triTranslated, triRotatedZ, triRotatedZX;
+
+            MultiplyMatrixVector(tri.p[0], triRotatedZ.p[0], matRotZ);
+            MultiplyMatrixVector(tri.p[1], triRotatedZ.p[1], matRotZ);
+            MultiplyMatrixVector(tri.p[2], triRotatedZ.p[2], matRotZ);
+            MultiplyMatrixVector(triRotatedZ.p[0], triRotatedZX.p[0], matRotX);
+            MultiplyMatrixVector(triRotatedZ.p[1], triRotatedZX.p[1], matRotX);
+            MultiplyMatrixVector(triRotatedZ.p[2], triRotatedZX.p[2], matRotX);
+
+            triTranslated = triRotatedZX;
+            triTranslated.p[0].z = triRotatedZX.p[0].z + 3.0f;
+            triTranslated.p[1].z = triRotatedZX.p[1].z + 3.0f;
+            triTranslated.p[2].z = triRotatedZX.p[2].z + 3.0f;
+
+            MultiplyMatrixVector(triTranslated.p[0], triProjected.p[0], matProj);
+            MultiplyMatrixVector(triTranslated.p[1], triProjected.p[1], matProj);
+            MultiplyMatrixVector(triTranslated.p[2], triProjected.p[2], matProj);
 
             //Scaling (something is wrong here and not scaling correctly, fps is super low)
             triProjected.p[0].x += 1.0f; triProjected.p[0].y += 1.0f;
