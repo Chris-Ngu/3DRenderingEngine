@@ -2,10 +2,10 @@
 C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\olcConsoleGameEngine.h(759,1): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\olcConsoleGameEngine.h(1099,1): warning C4267: 'return': conversion from 'size_t' to 'unsigned int', possible loss of data
 C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\olcConsoleGameEngine.h(1196,1): warning C4312: 'type cast': conversion from 'DWORD' to 'olcConsoleGameEngine *' of greater size
-C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(171,59): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(171,38): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(170,59): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(170,38): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(169,68): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(169,47): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(222,55): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(222,34): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(221,55): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(221,34): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(220,68): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(220,47): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
   C+GameEngine.vcxproj -> C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\x64\Debug\C+GameEngine.exe
