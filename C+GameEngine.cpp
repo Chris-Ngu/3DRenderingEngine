@@ -249,6 +249,76 @@ private:
         return Vector_Add(lineStart, lineToIntersect);
     }
 
+    int Triangle_ClipAgainstPlane(vec3d plane_p, vec3d plane_n, triangle& in_tri, triangle& out_tri1, triangle& out_tri2)
+    {
+        plane_n = Vector_Normalize(plane_n);
+        auto dist = [&](vec3d& p)
+        {
+            vec3d n = Vector_Normalize(p);
+            return (plane_n.x * p.x + plane_n.y * p.y + plane_n.z + p.z - Vector_DotProduct(plane_n, plane_p));
+        };
+
+        //Two arrays to classify if point is in the inside or outside of plane
+        vec3d* inside_points[3]; int nInsidePointCount = 0;
+        vec3d* outside_points[3]; int nOutsidePointCount = 0;
+        
+        //signed distance from each point
+        float d0 = dist(in_tri.p[0]);
+        float d1 = dist(in_tri.p[1]);
+        float d2 = dist(in_tri.p[2]);
+
+        if (d0 >= 0) { inside_points[nInsidePointCount++] = &in_tri.p[0]; }
+        else { outside_points[nOutsidePointCount++] = &in_tri.p[0]; }
+        if (d1 >= 0) { inside_points[nInsidePointCount++] = &in_tri.p[1]; }
+        else { outside_points[nOutsidePointCount++] = &in_tri.p[1]; }
+        if (d2 >= 0) { inside_points[nInsidePointCount++] = &in_tri.p[2]; }
+        else { outside_points[nOutsidePointCount++] = &in_tri.p[2]; }
+
+        //four outcomes for classifying tirangle points into smaller triangle outputs
+
+        if (nInsidePointCount == 0)
+        {
+            //points are outside of plane so clip all (doesn't exist anymore which saves rendering resource)
+            return 0;
+        }
+        if (nInsidePointCount == 3)
+        {
+            //Points are all inside the triangle so leave whole triangle intact
+            return 1;
+        }
+        if (nInsidePointCount == 1 && nOutsidePointCount == 2)
+        {
+            //clipped due to most of points being outside
+            out_tri1.col = in_tri.col;
+            out_tri1.sym = in_tri.sym;
+            out_tri1.p[0] = *inside_points[0]; //Valid point
+
+            out_tri1.p[1] = Vector_IntersectPlane(plane_p, plane_n, *inside_points[0], *outside_points[0]);
+            out_tri1.p[2] = Vector_IntersectPlane(plane_p, plane_n, *inside_points[0], *outside_points[1]);
+            return 1; //smaller new triangle
+        }
+        if (nInsidePointCount == 2 && nOutsidePointCount == 1)
+        {
+            //quad with two triangles
+            out_tri1.col = in_tri.col;
+            out_tri1.sym = in_tri.sym;
+            out_tri2.col = in_tri.col;
+            out_tri2.sym = in_tri.sym;
+
+            //two inside points and one point determined
+            out_tri1.p[0] = *inside_points[0];
+            out_tri1.p[1] = *inside_points[1];
+            out_tri1.p[2] = Vector_IntersectPlane(plane_p, plane_n, *inside_points[0], *outside_points[0]);
+
+            //other tirangle with outside points and  one determined
+            out_tri2.p[0] = *inside_points[1];
+            out_tri2.p[1] = out_tri1.p[2];
+            out_tri2.p[2] = Vector_IntersectPlane(plane_p, plane_n, *inside_points[1], *outside_points[0]);
+
+            return 2;//returns quad triangles
+        }
+    }
+
 	CHAR_INFO GetColour(float lum)
 	{
 		short bg_col, fg_col;
@@ -286,43 +356,47 @@ public:
     bool OnUserCreate() override
     {
         // x,y,z
-        meshCube.tris =
+        
             //Comment this section out when loading an OBJ file 
-            //meshCube.LoadFromObjectFile("EXAMPLE.OBJ");
-        {
-            // South cube
-            {0.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f,   1.0f, 1.0f, 0.0f},
-            {0.0f, 0.0f, 0.0f,  1.0f, 1.0f, 0.0f,   1.0f, 0.0f, 0.0f},
-            // east cube
-            {1.0f, 0.0f, 0.0f,  1.0f, 1.0f, 0.0f,   1.0f, 1.0f, 1.0f},
-            {1.0f, 0.0f, 0.0f,  1.0f, 1.0f, 1.0f,   1.0f, 0.0f, 1.0f},
-            // North cube
-            {1.0f, 0.0f, 1.0f,  1.0f, 1.0f, 1.0f,   0.0f, 1.0f, 1.0f},
-            {1.0f, 0.0f, 1.0f,  0.0f, 1.0f, 1.0f,   0.0f, 0.0f, 1.0f},
-            // West cube
-            {0.0f, 0.0f, 1.0f,  0.0f, 1.0f, 1.0f,   0.0f, 1.0f, 0.0f},
-            {0.0f, 0.0f, 1.0f,  0.0f, 1.0f, 0.0f,   0.0f, 0.0f, 0.0f},
-            // Top cube
-            {0.0f, 1.0f, 0.0f,  0.0f, 1.0f, 1.0f,   1.0f, 1.0f, 1.0f},
-            {0.0f, 1.0f, 0.0f,  1.0f, 1.0f, 1.0f,   1.0f, 1.0f, 0.0f},
-            // Bottom Cube
-            {1.0f, 0.0f, 1.0f,  0.0f, 0.0f, 1.0f,   0.0f, 0.0f, 0.0f},
-            {1.0f, 0.0f, 1.0f,  0.0f, 0.0f, 0.0f,   1.0f, 0.0f, 0.0f},
-        };
+            meshCube.LoadFromObjectFile("mountains.obj");
+            matProj = Matrix_MakeProjection(90.0f, (float)ScreenHeight() / (float)ScreenWidth(), 0.1f, 1000.0f);
 
-        // Projction matrix
-        float fNear = 0.1f;
-        float fFar = 1000.0f;
-        float fFov = 90.0f;
-        float fAspectRatio = (float)ScreenHeight() / (float)ScreenWidth();
-        float fFovRad = 1.0f / tanf(fFov * 0.5f / 180.0f * 3.14159f);
+        //removed due to loading obj
+        //    meshCube.tris =
+        //{
+        //    // South cube
+        //    {0.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f,   1.0f, 1.0f, 0.0f},
+        //    {0.0f, 0.0f, 0.0f,  1.0f, 1.0f, 0.0f,   1.0f, 0.0f, 0.0f},
+        //    // east cube
+        //    {1.0f, 0.0f, 0.0f,  1.0f, 1.0f, 0.0f,   1.0f, 1.0f, 1.0f},
+        //    {1.0f, 0.0f, 0.0f,  1.0f, 1.0f, 1.0f,   1.0f, 0.0f, 1.0f},
+        //    // North cube
+        //    {1.0f, 0.0f, 1.0f,  1.0f, 1.0f, 1.0f,   0.0f, 1.0f, 1.0f},
+        //    {1.0f, 0.0f, 1.0f,  0.0f, 1.0f, 1.0f,   0.0f, 0.0f, 1.0f},
+        //    // West cube
+        //    {0.0f, 0.0f, 1.0f,  0.0f, 1.0f, 1.0f,   0.0f, 1.0f, 0.0f},
+        //    {0.0f, 0.0f, 1.0f,  0.0f, 1.0f, 0.0f,   0.0f, 0.0f, 0.0f},
+        //    // Top cube
+        //    {0.0f, 1.0f, 0.0f,  0.0f, 1.0f, 1.0f,   1.0f, 1.0f, 1.0f},
+        //    {0.0f, 1.0f, 0.0f,  1.0f, 1.0f, 1.0f,   1.0f, 1.0f, 0.0f},
+        //    // Bottom Cube
+        //    {1.0f, 0.0f, 1.0f,  0.0f, 0.0f, 1.0f,   0.0f, 0.0f, 0.0f},
+        //    {1.0f, 0.0f, 1.0f,  0.0f, 0.0f, 0.0f,   1.0f, 0.0f, 0.0f},
+        //};
+        //
+        // Projction matrix 
+        //float fNear = 0.1f;
+        //float fFar = 1000.0f;
+        //float fFov = 90.0f;
+        //float fAspectRatio = (float)ScreenHeight() / (float)ScreenWidth();
+        //float fFovRad = 1.0f / tanf(fFov * 0.5f / 180.0f * 3.14159f);
 
-        matProj.m[0][0] = fAspectRatio * fFovRad;
-        matProj.m[1][1] = fFovRad;
-        matProj.m[2][2] = fFar / (fFar - fNear);
-        matProj.m[3][2] = (-fFar * fNear) / (fFar - fNear);
-        matProj.m[2][3] = 1.0f;
-        matProj.m[3][3] = 0.0f;
+        //matProj.m[0][0] = fAspectRatio * fFovRad;
+        //matProj.m[1][1] = fFovRad;
+        //matProj.m[2][2] = fFar / (fFar - fNear);
+        //matProj.m[3][2] = (-fFar * fNear) / (fFar - fNear);
+        //matProj.m[2][3] = 1.0f;
+        //matProj.m[3][3] = 0.0f;
         return true;
 
     }
