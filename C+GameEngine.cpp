@@ -6,13 +6,13 @@
 struct vec3d
 {
     //base of triangle coords
-    float x, y, z;
+    float x, y, z = 0;
+    float w = 1; //Need this for matrix multiplication
 };
 struct triangle
 {
     //triangle consists of three points
     vec3d p[3]; 
-
     wchar_t sym;
     short col;
 };
@@ -51,6 +51,7 @@ struct mesh
                 tris.push_back({ verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1 ] }); //Counts from 1 instead of base 0
             }
         }
+        return true;
     }
 };
 struct mat4x4
@@ -68,21 +69,118 @@ public:
     }
 private:
     mesh meshCube;
-    mat4x4 matProj;
-    float fTheta;
+    mat4x4 matProj; //Viewspace -> Screenspace
     vec3d vCamera;
+    vec3d vLookDir;
+    float fTheta;
+    float fYaw;
 
-    void MultiplyMatrixVector(vec3d& i, vec3d& o, mat4x4& m)
+    vec3d Matrix_MultiplyMatrixVector(mat4x4 &m, vec3d &i)
     {
-        o.x = i.x * m.m[0][0] + i.y * m.m[1][0] + i.z * m.m[2][0] + m.m[3][0];
-        o.y = i.x * m.m[0][1] + i.y * m.m[1][1] + i.z * m.m[2][1] + m.m[3][1];
-        o.z = i.x * m.m[0][2] + i.y * m.m[1][2] + i.z * m.m[2][2] + m.m[3][2];
-        float w = i.x * m.m[0][3] + i.y * m.m[1][3] + i.z * m.m[2][3] + m.m[3][3];
+        vec3d v;
+        v.x = i.x * m.m[0][0] + i.y * m.m[1][0] + i.z * m.m[2][0] + i.w * m.m[3][0];
+        v.y = i.x * m.m[0][1] + i.y * m.m[1][1] + i.z * m.m[2][1] + i.w * m.m[3][1];
+        v.z = i.x * m.m[0][2] + i.y * m.m[1][2] + i.z * m.m[2][2] + i.w * m.m[3][2];
+        v.w = i.x * m.m[0][3] + i.y * m.m[1][3] + i.z * m.m[2][3] + i.w * m.m[3][3];
+        return v;
+    }
 
-        if (w != 0.0f)
-        {
-            o.x /= w; o.y /= w; o.z /= w;
-        }
+    mat4x4 Matrix_MakeIdentity()
+    {
+        mat4x4 matrix;
+        matrix.m[0][0] = 1.0f;
+        matrix.m[1][1] = 1.0f;
+        matrix.m[2][2] = 1.0f;
+        matrix.m[3][3] = 1.0f;
+        return matrix;
+    }
+
+    mat4x4 Matrix_MakeRotationX(float fAngleRad)
+    {
+        mat4x4 matrix;
+        matrix.m[0][0] = 1.0f;
+        matrix.m[1][1] = cosf(fAngleRad);
+        matrix.m[1][2] = sinf(fAngleRad);
+        matrix.m[2][1] = -sinf(fAngleRad);
+        matrix.m[2][2] = cosf(fAngleRad);
+        matrix.m[3][3] = 1.0f;
+        return matrix;
+    }
+
+    mat4x4 Matrx_MakeRotationY(float fAngleRad)
+    {
+        mat4x4 matrix;
+        matrix.m[0][0] = cosf(fAngleRad);
+        matrix.m[0][2] = sinf(fAngleRad);
+        matrix.m[2][0] = -sinf(fAngleRad);
+        matrix.m[1][1] = 1.0f;
+        matrix.m[2][2] = cosf(fAngleRad);
+        matrix.m[3][3] = 1.0f;
+        return matrix;
+    }
+
+    mat4x4 Matrix_MakeRotationZ(float fAngleRad)
+    {
+        mat4x4 matrix;
+        matrix.m[0][0] = cosf(fAngleRad);
+        matrix.m[0][2] = sinf(fAngleRad);
+        matrix.m[2][0] = -sinf(fAngleRad);
+        matrix.m[1][1] = cosf(fAngleRad);
+        matrix.m[2][2] = 1.0f;
+        matrix.m[3][3] = 1.0f;
+        return matrix;
+    }
+
+    mat4x4 Matrix_MakeTranslation(float x, float y, float z)
+    {
+        mat4x4 matrix;
+        matrix.m[0][0] = 1.0f;
+        matrix.m[1][1] = 1.0f;
+        matrix.m[2][2] = 1.0f;
+        matrix.m[3][3] = 1.0f;
+        matrix.m[3][0] = x;
+        matrix.m[3][1] = y;
+        matrix.m[0][2] = z;
+    }
+
+    vec3d Vector_Add(vec3d& v1, vec3d& v2)
+    {
+        return { v1.x + v2.x, v1.y + v2.y, v1.z + v2.z };
+    }
+
+    vec3d Vector_sub(vec3d& v1, vec3d& v2)
+    {
+        return { v1.x - v2.x, v1.y - v2.y, v1.z - v2.z };
+    }
+
+    vec3d Vector_Mul(vec3d& v1, float k)
+    {
+        return { v1.x * k, v1.y * k, v1.z * k };
+    }
+
+    vec3d Vector_Div(vec3d& v1, float k)
+    {
+        return { v1.x / k, v1.y / k, v1.z / k };
+    }
+
+    float Vector_DotProduct(vec3d& v1, vec3d& v2)
+    {
+        return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+    }
+
+    vec3d Vector_Normalize(vec3d& v)
+    {
+        float l = Vector_length(v);
+        return { v.x / l, v.y / l, v.z / l };
+    }
+
+    vec3d Vector_crossProduct(vec3d& v1, vec3d& v2)
+    {
+        vec3d v;
+        v.x = v1.y * v2.z - v1.z * v2.y;
+        v.y = v1.z * v2.x - v1.x * v2.z;
+        v.z = v1.x * v2.y - v1.y * v2.x;
+        return v;
     }
 
 	CHAR_INFO GetColour(float lum)
@@ -125,7 +223,6 @@ public:
         meshCube.tris =
             //Comment this section out when loading an OBJ file 
             //meshCube.LoadFromObjectFile("EXAMPLE.OBJ");
-
         {
             // South cube
             {0.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f,   1.0f, 1.0f, 0.0f},
