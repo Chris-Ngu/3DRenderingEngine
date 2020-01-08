@@ -1,4 +1,6 @@
 #include "olcConsoleGameEngine.h"
+#include <fstream>
+#include <strstream>
 
 struct vec3d
 {
@@ -17,6 +19,37 @@ struct mesh
 {
     //vectors of triangle objects
     std::vector<triangle> tris;
+
+    //Loading from blender file
+    bool LoadFromObjectFile(std::string sFilename)
+    {
+        std::ifstream f(sFilename);
+        if (!f.is_open()) return false;
+
+        std::vector<vec3d> verts;
+        while (!f.eof())
+        {
+            char line[128];
+            f.getline(line, 128);
+
+            std::strstream s;
+            s << line;
+            char trash;
+
+            //trash line in OBJ file
+            if (line[0] == 'v')
+            {
+                vec3d v;
+                s >> trash >> v.x >> v.y >> v.z;
+                verts.push_back(v);
+            }
+            if (line[0] == 'f')
+            {
+                int f[3];
+                s >> trash >> f[0] >> f[1] >> f[2];
+            }
+        }
+    }
 };
 struct mat4x4
 {
@@ -75,7 +108,6 @@ private:
 		    case 11: bg_col = BG_GREY; fg_col = FG_WHITE; sym = PIXEL_THREEQUARTERS; break;
 		    case 12: bg_col = BG_GREY; fg_col = FG_WHITE; sym = PIXEL_SOLID; break;
 		    default: bg_col = BG_BLACK; fg_col = FG_BLACK; sym = PIXEL_SOLID;
-			
 		}
 
 		CHAR_INFO c;
@@ -83,7 +115,6 @@ private:
 		c.Char.UnicodeChar = sym;
 		return c;
 	}
-
 
 public:
     bool OnUserCreate() override
@@ -222,10 +253,11 @@ public:
                 triProjected.p[2].x, triProjected.p[2].y,
                 triProjected.sym, triProjected.col);
 
+                //Wireframe debugger
                 /*DrawTriangle(triProjected.p[0].x, triProjected.p[0].y,
                     triProjected.p[1].x, triProjected.p[1].y,
                     triProjected.p[2].x, triProjected.p[2].y,
-                    PIXEL_SOLID, FG_WHITE);*/
+                    PIXEL_SOLID, FG_BLACK);*/
             }
         }
 
