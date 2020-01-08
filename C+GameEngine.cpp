@@ -1,6 +1,7 @@
 #include "olcConsoleGameEngine.h"
 #include <fstream>
 #include <strstream>
+#include <algorithm>
 
 struct vec3d
 {
@@ -47,6 +48,7 @@ struct mesh
             {
                 int f[3];
                 s >> trash >> f[0] >> f[1] >> f[2];
+                tris.push_back({ verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1 ] }); //Counts from 1 instead of base 0
             }
         }
     }
@@ -121,6 +123,9 @@ public:
     {
         // x,y,z
         meshCube.tris =
+            //Comment this section out when loading an OBJ file 
+            //meshCube.LoadFromObjectFile("EXAMPLE.OBJ");
+
         {
             // South cube
             {0.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f,   1.0f, 1.0f, 0.0f},
@@ -141,6 +146,7 @@ public:
             {1.0f, 0.0f, 1.0f,  0.0f, 0.0f, 1.0f,   0.0f, 0.0f, 0.0f},
             {1.0f, 0.0f, 1.0f,  0.0f, 0.0f, 0.0f,   1.0f, 0.0f, 0.0f},
         };
+
         // Projction matrix
         float fNear = 0.1f;
         float fFar = 1000.0f;
@@ -177,6 +183,8 @@ public:
         matRotX.m[2][2] = cosf(fTheta * 0.5f);
         matRotX.m[3][3] = 1;
 
+        std::vector<triangle> vecTrianglesToRaster;
+
         //draw Polygons/ triangles
         for (auto tri : meshCube.tris)
         {
@@ -190,9 +198,9 @@ public:
             MultiplyMatrixVector(triRotatedZ.p[2], triRotatedZX.p[2], matRotX);
 
             triTranslated = triRotatedZX;
-            triTranslated.p[0].z = triRotatedZX.p[0].z + 3.0f;
-            triTranslated.p[1].z = triRotatedZX.p[1].z + 3.0f;
-            triTranslated.p[2].z = triRotatedZX.p[2].z + 3.0f;
+            triTranslated.p[0].z = triRotatedZX.p[0].z + 4.0f;
+            triTranslated.p[1].z = triRotatedZX.p[1].z + 4.0f;
+            triTranslated.p[2].z = triRotatedZX.p[2].z + 4.0f;
 
             vec3d normal, line1,line2;
             line1.x = triTranslated.p[1].x - triTranslated.p[0].x;
@@ -247,18 +255,32 @@ public:
                 triProjected.p[2].x *= 0.5f * (float)ScreenWidth();
                 triProjected.p[2].y *= 0.5f * (float)ScreenHeight();
 
+                vecTrianglesToRaster.push_back(triProjected);
+            }
+        }
 
-                FillTriangle(triProjected.p[0].x, triProjected.p[0].y,
+        //sorting triangles from front to back
+        sort(vecTrianglesToRaster.begin(), vecTrianglesToRaster.end(), [](triangle& t1, triangle& t2) 
+            {
+                float z1 = (t1.p[0].z + t1.p[1].z + t1.p[2].z) / 3.0f;
+                float z2 = (t2.p[0].z + t2.p[1].z + t2.p[2].z) / 3.0f;
+                return z1 > z2; //boolean
+            });
+
+
+        for (auto& triProjected : vecTrianglesToRaster)
+        {
+            FillTriangle(triProjected.p[0].x, triProjected.p[0].y,
                 triProjected.p[1].x, triProjected.p[1].y,
                 triProjected.p[2].x, triProjected.p[2].y,
                 triProjected.sym, triProjected.col);
 
-                //Wireframe debugger
-                /*DrawTriangle(triProjected.p[0].x, triProjected.p[0].y,
-                    triProjected.p[1].x, triProjected.p[1].y,
-                    triProjected.p[2].x, triProjected.p[2].y,
-                    PIXEL_SOLID, FG_BLACK);*/
-            }
+            //Wireframe debugger
+            /*DrawTriangle(triProjected.p[0].x, triProjected.p[0].y,
+                triProjected.p[1].x, triProjected.p[1].y,
+                triProjected.p[2].x, triProjected.p[2].y,
+                PIXEL_SOLID, FG_BLACK);*/
+                
         }
 
         return true;
