@@ -480,84 +480,107 @@ public:
             normal = Vector_crossProduct(line1, line2); //Makes a third triangle with the two other
             normal = Vector_Normalize(normal);
 
-            line1.x = triTranslated.p[1].x - triTranslated.p[0].x;
-            line1.y = triTranslated.p[1].y - triTranslated.p[0].y;
-            line1.z = triTranslated.p[1].z - triTranslated.p[0].z;
+            vec3d vCameraRay = Vector_Sub(triTransformed.p[0], vCamera);
 
-            line2.x = triTranslated.p[2].x - triTranslated.p[0].x;
-            line2.y = triTranslated.p[2].y - triTranslated.p[0].y;
-            line2.z = triTranslated.p[2].z - triTranslated.p[0].z;
-
-            normal.x = line1.y * line2.z - line1.z * line2.y;
-            normal.y = line1.z * line2.x - line1.x * line2.z;
-            normal.z = line1.x * line2.y - line1.y * line2.x;
-            
-            //pythag theorm for length
-            float l = sqrtf(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
-            normal.x /= l; normal.y /= 1; normal.z /= 1;
-
-            //3d -> 2d
-            //if (normal.z < 0) 
-            if (normal.x * (triTranslated.p[0].x - vCamera.x)+
-                normal.y * (triTranslated.p[0].y - vCamera.y)+
-                normal.z * (triTranslated.p[0].z - vCamera.z) < 0) //Camera perspective view of blocking triangles
-            { 
+            if (Vector_DotProduct(normal, vCameraRay) < 0.0f)
+            {
                 //lighting
-                vec3d light_direction = { 0.0f, 0.0f, -1.0f };
-                float l = sqrtf(light_direction.x * light_direction.x + light_direction.y * light_direction.y + light_direction.z * light_direction.z);
-                light_direction.x /= l; light_direction.y /= l; light_direction.z /= l;
+                vec3d light_direction = { 0.0f,1.0f,-1.0f };
+                light_direction = Vector_Normalize(light_direction);
+                float dp = max(0.1f, Vector_DotProduct(light_direction, normal)); //allignment of triangle and light direction
 
-                float dp = normal.x * light_direction.x + normal.y * light_direction.y + normal.z * light_direction.z;
+                //Colouring 
                 CHAR_INFO c = GetColour(dp);
-                triTranslated.col = c.Attributes;
-                triTranslated.sym = c.Char.UnicodeChar;
+                triTransformed.col = c.Attributes;
+                triTransformed.sym = c.Char.UnicodeChar;
 
-                //Triangles 3d -> 2d
-                MultiplyMatrixVector(triTranslated.p[0], triProjected.p[0], matProj);
-                MultiplyMatrixVector(triTranslated.p[1], triProjected.p[1], matProj);
-                MultiplyMatrixVector(triTranslated.p[2], triProjected.p[2], matProj);
-                triProjected.col = triTranslated.col;
-                triProjected.sym = triTranslated.sym;
+                //world to view space
+                triViewed.p[0] = Matrix_MultiplyVector(matView, triTransformed.p[0]);
+                triViewed.p[1] = Matrix_MultiplyVector(matView, triTransformed.p[1]);
+                triViewed.p[2] = Matrix_MultiplyVector(matView, triTransformed.p[2]);
+                triViewed.sym = triTransformed.sym;
+                triViewed.col = triTransformed.col;
 
-                //Scaling (something is wrong here and not scaling correctly, fps is super low)
-                triProjected.p[0].x += 1.0f; triProjected.p[0].y += 1.0f;
-                triProjected.p[1].x += 1.0f; triProjected.p[1].y += 1.0f;
-                triProjected.p[2].x += 1.0f; triProjected.p[2].y += 1.0f;
+                //Clipping triangle from the plane
+                int nClippedTriangles = 0;
+                triangle clipped[2];
+                nClippedTriangles = Triangle_ClipAgainstPlane({ 0.0f, 0.0f, 0.1f }, { 0.0f, 0.0f, 1.0f }, triViewed, clipped[0], clipped[1]);
 
-                //Rasterization
-                triProjected.p[0].x *= 0.5f * (float)ScreenWidth();
-                triProjected.p[0].y *= 0.5f * (float)ScreenHeight();
-                triProjected.p[1].x *= 0.5f * (float)ScreenWidth();
-                triProjected.p[1].y *= 0.5f * (float)ScreenHeight();
-                triProjected.p[2].x *= 0.5f * (float)ScreenWidth();
-                triProjected.p[2].y *= 0.5f * (float)ScreenHeight();
+                //projected of clipped triangles (if more than one)
+                for (int n = 0; n < nClippedTriangles; n++)
+                {
+                    //3d -> 2d
+                    triProjected.p[0] = Matrix_MultiplyVector(matProj, clipped[n].p[0]);
+                    triProjected.p[1] = Matrix_MultiplyVector(matProj, clipped[n].p[1]);
+                    triProjected.p[2] = Matrix_MultiplyVector(matProj, clipped[n].p[2]);
+                    triProjected.col = clipped[n].col;
+                    triProjected.sym - clipped[n].sym;
 
-                vecTrianglesToRaster.push_back(triProjected);
+                    //Scaling
+                    triProjected.p[0] = Vector_Div(triProjected.p[0], triProjected.p[0].w);
+                    triProjected.p[1] = Vector_Div(triProjected.p[1], triProjected.p[1].w);
+                    triProjected.p[2] = Vector_Div(triProjected.p[2], triProjected.p[2].w);
+
+                    //inverting x and y
+                    triProjected.p[0].x *= -1.0f;
+                    triProjected.p[1].x *= -1.0f;
+                    triProjected.p[2].x *= -1.0f;
+                    triProjected.p[0].y *= -1.0f;
+                    triProjected.p[1].y *= -1.0f;
+                    triProjected.p[2].y *= -1.0f;
+                    vecTrianglesToRaster.push_back(triProjected); //storage for sorting
+
+                }
             }
         }
-
-        //sorting triangles from front to back
-        sort(vecTrianglesToRaster.begin(), vecTrianglesToRaster.end(), [](triangle& t1, triangle& t2) 
+        //sorting back to front
+        sort(vecTrianglesToRaster.begin(), vecTrianglesToRaster.end(), [](triangle& t1, triangle& t2)
             {
                 float z1 = (t1.p[0].z + t1.p[1].z + t1.p[2].z) / 3.0f;
                 float z2 = (t2.p[0].z + t2.p[1].z + t2.p[2].z) / 3.0f;
-                return z1 > z2; //boolean
+                return z1 > z2;
             });
+        Fill(0, 0, ScreenWidth(), ScreenHeight(), PIXEL_SOLID, FG_BLACK);
 
-
-        for (auto& triProjected : vecTrianglesToRaster)
+        for (auto& triToRaster : vecTrianglesToRaster)
         {
-            FillTriangle(triProjected.p[0].x, triProjected.p[0].y,
-                triProjected.p[1].x, triProjected.p[1].y,
-                triProjected.p[2].x, triProjected.p[2].y,
-                triProjected.sym, triProjected.col);
+            //Queue to test new triangles on plane
+            triangle clipped[2];
+            std::list<triangle> listTriangles;
+            listTriangles.push_back(triToRaster);
+            int nNewTriangles = 1;
 
-            //Wireframe debugger
-            /*DrawTriangle(triProjected.p[0].x, triProjected.p[0].y,
-                triProjected.p[1].x, triProjected.p[1].y,
-                triProjected.p[2].x, triProjected.p[2].y,
-                PIXEL_SOLID, FG_BLACK);*/
-                
+            for (int p = 0; p < 4; p++)
+            {
+                int nTrisToAdd = 0;
+                while (nNewTriangles > 0)
+                {
+                    triangle test = listTriangles.front();
+                    listTriangles.pop_front();
+                    nNewTriangles--;
+
+                    //Clip checking
+                    switch (p)
+                    {
+                        case 0: nTrisToAdd = Triangle_ClipAgainstPlane({ 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, test, clipped[0], clipped[1]); break;
+                        case 1: nTrisToAdd = Triangle_ClipAgainstPlane({ 0.0f, (float)ScreenHeight() - 1, 0.0f }, { 0.0f, -1.0f, 0.0f }, test, clipped[0], clipped[1]); break;
+                        case 2: nTrisToAdd = Triangle_ClipAgainstPlane({ 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, test, clipped[0], clipped[1]); break;
+                        case 3: nTrisToAdd = Triangle_ClipAgainstPlane({ (float)ScreenWidth() - 1, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }, test, clipped[0], clipped[1]); break;
+                    }
+                    //n number of new triangles so we add to back list to clip
+                    for (int w = 0; w < nTrisToAdd; w++)
+                    {
+                        listTriangles.push_back(clipped[w]);
+                    }
+                }
+                nNewTriangles = listTriangles.size();
+            }
+
+            for (auto& t : listTriangles)
+            {
+                FillTriangle(t.p[0].x, t.p[0].y, t.p[1].x, t.p[1].y, t.p[2].y, t.sym, t.col);
+            }
+
         }
 
         return true;
