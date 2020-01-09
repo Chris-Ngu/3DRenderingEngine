@@ -426,7 +426,6 @@ public:
         if (GetKey(L'A').bHeld) fYaw -= 2.0f * fFElapsedTime;
         if (GetKey(L'D').bHeld) fYaw += 2.0f * fFElapsedTime;
 
-        Fill(0, 0, ScreenWidth(), ScreenHeight(), PIXEL_SOLID, FG_BLACK);
         mat4x4 matRotZ, matRotX;
         matRotZ = Matrix_MakeRotationZ(fTheta * 0.5f);
         matRotX = Matrix_MakeRotationX(fTheta);
@@ -437,12 +436,14 @@ public:
         mat4x4 matWorld;
         matWorld = Matrix_MakeIdentity();
         matWorld = Matrix_MultiplyMatrix(matRotZ, matRotX);
+        matWorld = Matrix_MultiplyMatrix(matWorld, matTrans);
 
         //Camera point
         vec3d vUp = { 0,1,0 };
         vec3d vTarget = { 0,0,1 };
         mat4x4 matCameraRot = Matrix_MakeRotationY(fYaw);
         vLookDir = Matrix_MultiplyVector(matCameraRot, vTarget);
+        vTarget = Vector_Add(vCamera, vLookDir);
         mat4x4 matCamera = Matrix_PointAt(vCamera, vTarget, vUp);
         mat4x4 matView = Matrix_QuickInverse(matCamera); //Preview
 
@@ -528,6 +529,17 @@ public:
                     triProjected.p[0].y *= -1.0f;
                     triProjected.p[1].y *= -1.0f;
                     triProjected.p[2].y *= -1.0f;
+
+                    vec3d vOffsetView = { 1, 1, 0 };
+                    triProjected.p[0] = Vector_Add(triProjected.p[0], vOffsetView);
+                    triProjected.p[1] = Vector_Add(triProjected.p[1], vOffsetView);
+                    triProjected.p[2] = Vector_Add(triProjected.p[2], vOffsetView);
+                    triProjected.p[0].x *= 0.5f * (float)ScreenWidth();
+                    triProjected.p[0].y *= 0.5f * (float)ScreenHeight();
+                    triProjected.p[1].x *= 0.5f * (float)ScreenWidth();
+                    triProjected.p[1].y *= 0.5f * (float)ScreenHeight();
+                    triProjected.p[2].x *= 0.5f * (float)ScreenWidth();
+                    triProjected.p[2].y *= 0.5f * (float)ScreenHeight();
                     vecTrianglesToRaster.push_back(triProjected); //storage for sorting
 
                 }
@@ -540,6 +552,7 @@ public:
                 float z2 = (t2.p[0].z + t2.p[1].z + t2.p[2].z) / 3.0f;
                 return z1 > z2;
             });
+        //Clear, making clean slate
         Fill(0, 0, ScreenWidth(), ScreenHeight(), PIXEL_SOLID, FG_BLACK);
 
         for (auto& triToRaster : vecTrianglesToRaster)
