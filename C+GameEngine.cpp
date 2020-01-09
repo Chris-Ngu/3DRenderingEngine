@@ -14,7 +14,7 @@ struct triangle
     //triangle consists of three points
     vec3d p[3]; 
     wchar_t sym;
-    short col;
+    short col; 
 };
 struct mesh
 {
@@ -48,7 +48,7 @@ struct mesh
             {
                 int f[3];
                 s >> trash >> f[0] >> f[1] >> f[2];
-                tris.push_back({ verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1 ] }); //Counts from 1 instead of base 0
+                tris.push_back({ verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1] }); //Counts from 1 instead of base 0
             }
         }
         return true;
@@ -123,8 +123,8 @@ private:
     {
         mat4x4 matrix;
         matrix.m[0][0] = cosf(fAngleRad);
-        matrix.m[0][2] = sinf(fAngleRad);
-        matrix.m[2][0] = -sinf(fAngleRad);
+        matrix.m[0][1] = sinf(fAngleRad);
+        matrix.m[1][0] = -sinf(fAngleRad);
         matrix.m[1][1] = cosf(fAngleRad);
         matrix.m[2][2] = 1.0f;
         matrix.m[3][3] = 1.0f;
@@ -174,21 +174,21 @@ private:
     {
         //Which way are you looking?
         vec3d newForward = Vector_Sub(target, pos);
-        newForward = Vector_Normalize(newForward);
+        newForward = Vector_Normalise(newForward);
 
         //New up direction
         vec3d a = Vector_Mul(newForward, Vector_DotProduct(up, newForward));
         vec3d newUp = Vector_Sub(up, a);
-        newUp = Vector_Normalize(newUp);
+        newUp = Vector_Normalise(newUp);
 
-        vec3d newRight = Vector_crossProduct(newUp, newForward);
+        vec3d newRight = Vector_CrossProduct(newUp, newForward);
 
         //Dimensioning and translation matrix
         mat4x4 matrix;
-        matrix.m[0][0] = newRight.x; matrix.m[0][1] = newRight.y; matrix.m[0][2] = newRight.z; matrix.m[0][3] = 0.0f;
-        matrix.m[1][0] = newUp.x; matrix.m[1][1] = newUp.y; matrix.m[1][2] = newUp.z; matrix.m[1][3] = 0.0f;
-        matrix.m[2][0] = newForward.x; matrix.m[2][1] = newForward.y; matrix.m[2][2] = newForward.z; matrix.m[2][3] = 0.0f;
-        matrix.m[3][0] = pos.x; matrix.m[3][1] = pos.y; matrix.m[3][2] = pos.z; matrix.m[3][3] = 1.0f;
+        matrix.m[0][0] = newRight.x;	matrix.m[0][1] = newRight.y;	matrix.m[0][2] = newRight.z;	matrix.m[0][3] = 0.0f;
+        matrix.m[1][0] = newUp.x;		matrix.m[1][1] = newUp.y;		matrix.m[1][2] = newUp.z;		matrix.m[1][3] = 0.0f;
+        matrix.m[2][0] = newForward.x;	matrix.m[2][1] = newForward.y;	matrix.m[2][2] = newForward.z;	matrix.m[2][3] = 0.0f;
+        matrix.m[3][0] = pos.x;			matrix.m[3][1] = pos.y;			matrix.m[3][2] = pos.z;			matrix.m[3][3] = 1.0f;
         return matrix;
     }
 
@@ -235,13 +235,13 @@ private:
         return sqrtf(Vector_DotProduct(v, v));
     }
 
-    vec3d Vector_Normalize(vec3d& v)
+    vec3d Vector_Normalise(vec3d& v)
     {
         float l = Vector_Length(v);
         return { v.x / l, v.y / l, v.z / l };
     }
 
-    vec3d Vector_crossProduct(vec3d& v1, vec3d& v2)
+    vec3d Vector_CrossProduct(vec3d& v1, vec3d& v2)
     {
         vec3d v;
         v.x = v1.y * v2.z - v1.z * v2.y;
@@ -252,7 +252,7 @@ private:
 
     vec3d Vector_IntersectPlane(vec3d& plane_p, vec3d& plane_n, vec3d& lineStart, vec3d& lineEnd)
     {
-        plane_n = Vector_Normalize(plane_n);
+        plane_n = Vector_Normalise(plane_n);
         float plane_d = -Vector_DotProduct(plane_n, plane_p);
         float ad = Vector_DotProduct(lineStart, plane_n);
         float bd = Vector_DotProduct(lineEnd, plane_n);
@@ -264,15 +264,15 @@ private:
 
     int Triangle_ClipAgainstPlane(vec3d plane_p, vec3d plane_n, triangle& in_tri, triangle& out_tri1, triangle& out_tri2)
     {
-        plane_n = Vector_Normalize(plane_n);
+        plane_n = Vector_Normalise(plane_n);
         auto dist = [&](vec3d& p)
         {
-            vec3d n = Vector_Normalize(p);
-            return (plane_n.x * p.x + plane_n.y * p.y + plane_n.z + p.z - Vector_DotProduct(plane_n, plane_p));
+            vec3d n = Vector_Normalise(p);
+            return (plane_n.x * p.x + plane_n.y * p.y + plane_n.z * p.z - Vector_DotProduct(plane_n, plane_p));
         };
 
         //Two arrays to classify if point is in the inside or outside of plane
-        vec3d* inside_points[3]; int nInsidePointCount = 0;
+        vec3d* inside_points[3];  int nInsidePointCount = 0;
         vec3d* outside_points[3]; int nOutsidePointCount = 0;
         
         //signed distance from each point
@@ -297,6 +297,7 @@ private:
         if (nInsidePointCount == 3)
         {
             //Points are all inside the triangle so leave whole triangle intact
+            out_tri1 = in_tri;
             return 1;
         }
         if (nInsidePointCount == 1 && nOutsidePointCount == 2)
@@ -334,29 +335,29 @@ private:
 
 	CHAR_INFO GetColour(float lum)
 	{
-		short bg_col, fg_col;
-		wchar_t sym;
-		int pixel_bw = (int)(13.0f*lum);
-		switch (pixel_bw)
+        short bg_col, fg_col;
+        wchar_t sym;
+        int pixel_bw = (int)(13.0f * lum);
+        switch (pixel_bw)
 		{
             //Black and white shading
-		    case 0: bg_col = BG_BLACK; fg_col = FG_BLACK; sym = PIXEL_SOLID; break;
+            case 0: bg_col = BG_BLACK; fg_col = FG_BLACK; sym = PIXEL_SOLID; break;
 
-		    case 1: bg_col = BG_BLACK; fg_col = FG_DARK_GREY; sym = PIXEL_QUARTER; break;
-		    case 2: bg_col = BG_BLACK; fg_col = FG_DARK_GREY; sym = PIXEL_HALF; break;
-		    case 3: bg_col = BG_BLACK; fg_col = FG_DARK_GREY; sym = PIXEL_THREEQUARTERS; break;
-		    case 4: bg_col = BG_BLACK; fg_col = FG_DARK_GREY; sym = PIXEL_SOLID; break;
+            case 1: bg_col = BG_BLACK; fg_col = FG_DARK_GREY; sym = PIXEL_QUARTER; break;
+            case 2: bg_col = BG_BLACK; fg_col = FG_DARK_GREY; sym = PIXEL_HALF; break;
+            case 3: bg_col = BG_BLACK; fg_col = FG_DARK_GREY; sym = PIXEL_THREEQUARTERS; break;
+            case 4: bg_col = BG_BLACK; fg_col = FG_DARK_GREY; sym = PIXEL_SOLID; break;
 
-		    case 5: bg_col = BG_DARK_GREY; fg_col = FG_GREY; sym = PIXEL_QUARTER; break;
-		    case 6: bg_col = BG_DARK_GREY; fg_col = FG_GREY; sym = PIXEL_HALF; break;
-		    case 7: bg_col = BG_DARK_GREY; fg_col = FG_GREY; sym = PIXEL_THREEQUARTERS; break;
-		    case 8: bg_col = BG_DARK_GREY; fg_col = FG_GREY; sym = PIXEL_SOLID; break;
+            case 5: bg_col = BG_DARK_GREY; fg_col = FG_GREY; sym = PIXEL_QUARTER; break;
+            case 6: bg_col = BG_DARK_GREY; fg_col = FG_GREY; sym = PIXEL_HALF; break;
+            case 7: bg_col = BG_DARK_GREY; fg_col = FG_GREY; sym = PIXEL_THREEQUARTERS; break;
+            case 8: bg_col = BG_DARK_GREY; fg_col = FG_GREY; sym = PIXEL_SOLID; break;
 
-		    case 9:  bg_col = BG_GREY; fg_col = FG_WHITE; sym = PIXEL_QUARTER; break;
-		    case 10: bg_col = BG_GREY; fg_col = FG_WHITE; sym = PIXEL_HALF; break;
-		    case 11: bg_col = BG_GREY; fg_col = FG_WHITE; sym = PIXEL_THREEQUARTERS; break;
-		    case 12: bg_col = BG_GREY; fg_col = FG_WHITE; sym = PIXEL_SOLID; break;
-		    default: bg_col = BG_BLACK; fg_col = FG_BLACK; sym = PIXEL_SOLID;
+            case 9:  bg_col = BG_GREY; fg_col = FG_WHITE; sym = PIXEL_QUARTER; break;
+            case 10: bg_col = BG_GREY; fg_col = FG_WHITE; sym = PIXEL_HALF; break;
+            case 11: bg_col = BG_GREY; fg_col = FG_WHITE; sym = PIXEL_THREEQUARTERS; break;
+            case 12: bg_col = BG_GREY; fg_col = FG_WHITE; sym = PIXEL_SOLID; break;
+            default: bg_col = BG_BLACK; fg_col = FG_BLACK; sym = PIXEL_SOLID;
 		}
 
 		CHAR_INFO c;
@@ -368,48 +369,8 @@ private:
 public:
     bool OnUserCreate() override
     {
-        // x,y,z
-        
-            //Comment this section out when loading an OBJ file 
-            meshCube.LoadFromObjectFile("mountains.obj");
-            matProj = Matrix_MakeProjection(90.0f, (float)ScreenHeight() / (float)ScreenWidth(), 0.1f, 1000.0f);
-
-        //removed due to loading obj
-        //    meshCube.tris =
-        //{
-        //    // South cube
-        //    {0.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f,   1.0f, 1.0f, 0.0f},
-        //    {0.0f, 0.0f, 0.0f,  1.0f, 1.0f, 0.0f,   1.0f, 0.0f, 0.0f},
-        //    // east cube
-        //    {1.0f, 0.0f, 0.0f,  1.0f, 1.0f, 0.0f,   1.0f, 1.0f, 1.0f},
-        //    {1.0f, 0.0f, 0.0f,  1.0f, 1.0f, 1.0f,   1.0f, 0.0f, 1.0f},
-        //    // North cube
-        //    {1.0f, 0.0f, 1.0f,  1.0f, 1.0f, 1.0f,   0.0f, 1.0f, 1.0f},
-        //    {1.0f, 0.0f, 1.0f,  0.0f, 1.0f, 1.0f,   0.0f, 0.0f, 1.0f},
-        //    // West cube
-        //    {0.0f, 0.0f, 1.0f,  0.0f, 1.0f, 1.0f,   0.0f, 1.0f, 0.0f},
-        //    {0.0f, 0.0f, 1.0f,  0.0f, 1.0f, 0.0f,   0.0f, 0.0f, 0.0f},
-        //    // Top cube
-        //    {0.0f, 1.0f, 0.0f,  0.0f, 1.0f, 1.0f,   1.0f, 1.0f, 1.0f},
-        //    {0.0f, 1.0f, 0.0f,  1.0f, 1.0f, 1.0f,   1.0f, 1.0f, 0.0f},
-        //    // Bottom Cube
-        //    {1.0f, 0.0f, 1.0f,  0.0f, 0.0f, 1.0f,   0.0f, 0.0f, 0.0f},
-        //    {1.0f, 0.0f, 1.0f,  0.0f, 0.0f, 0.0f,   1.0f, 0.0f, 0.0f},
-        //};
-        //
-        // Projction matrix 
-        //float fNear = 0.1f;
-        //float fFar = 1000.0f;
-        //float fFov = 90.0f;
-        //float fAspectRatio = (float)ScreenHeight() / (float)ScreenWidth();
-        //float fFovRad = 1.0f / tanf(fFov * 0.5f / 180.0f * 3.14159f);
-
-        //matProj.m[0][0] = fAspectRatio * fFovRad;
-        //matProj.m[1][1] = fFovRad;
-        //matProj.m[2][2] = fFar / (fFar - fNear);
-        //matProj.m[3][2] = (-fFar * fNear) / (fFar - fNear);
-        //matProj.m[2][3] = 1.0f;
-        //matProj.m[3][3] = 0.0f;
+        meshCube.LoadFromObjectFile("mountains.obj");
+        matProj = Matrix_MakeProjection(90.0f, (float)ScreenHeight() / (float)ScreenWidth(), 0.1f, 1000.0f);
         return true;
 
     }
@@ -447,23 +408,6 @@ public:
         mat4x4 matCamera = Matrix_PointAt(vCamera, vTarget, vUp);
         mat4x4 matView = Matrix_QuickInverse(matCamera); //Preview
 
-
-        //fTheta += 1.0f * fFElapsedTime;
-        //cube spin
-        //matRotZ.m[0][0] = cosf(fTheta);
-        //matRotZ.m[0][1] = sinf(fTheta);
-        //matRotZ.m[1][0] = -sinf(fTheta);
-        //matRotZ.m[1][1] = cosf(fTheta);
-        //matRotZ.m[2][2] = 1;
-        //matRotZ.m[3][3] = 1;
-
-        //matRotX.m[0][0] = 1;
-        //matRotX.m[1][1] = cosf(fTheta * 0.5f);
-        //matRotX.m[1][2] = sinf(fTheta * 0.5f);
-        //matRotX.m[2][1] = -sinf(fTheta * 0.5f);
-        //matRotX.m[2][2] = cosf(fTheta * 0.5f);
-        //matRotX.m[3][3] = 1;
-
         std::vector<triangle> vecTrianglesToRaster;
 
         //draw Polygons/ triangles
@@ -478,16 +422,16 @@ public:
             vec3d normal, line1, line2;
             line1 = Vector_Sub(triTransformed.p[1], triTransformed.p[0]);
             line2 = Vector_Sub(triTransformed.p[2], triTransformed.p[0]);
-            normal = Vector_crossProduct(line1, line2); //Makes a third triangle with the two other
-            normal = Vector_Normalize(normal);
+            normal = Vector_CrossProduct(line1, line2); //Makes a third triangle with the two other
+            normal = Vector_Normalise(normal);
 
             vec3d vCameraRay = Vector_Sub(triTransformed.p[0], vCamera);
 
             if (Vector_DotProduct(normal, vCameraRay) < 0.0f)
             {
                 //lighting
-                vec3d light_direction = { 0.0f,1.0f,-1.0f };
-                light_direction = Vector_Normalize(light_direction);
+                vec3d light_direction = { 0.0f, 1.0f, -1.0f };
+                light_direction = Vector_Normalise(light_direction);
                 float dp = max(0.1f, Vector_DotProduct(light_direction, normal)); //allignment of triangle and light direction
 
                 //Colouring 
@@ -515,7 +459,7 @@ public:
                     triProjected.p[1] = Matrix_MultiplyVector(matProj, clipped[n].p[1]);
                     triProjected.p[2] = Matrix_MultiplyVector(matProj, clipped[n].p[2]);
                     triProjected.col = clipped[n].col;
-                    triProjected.sym - clipped[n].sym;
+                    triProjected.sym = clipped[n].sym;
 
                     //Scaling
                     triProjected.p[0] = Vector_Div(triProjected.p[0], triProjected.p[0].w);
@@ -575,10 +519,10 @@ public:
                     //Clip checking
                     switch (p)
                     {
-                        case 0: nTrisToAdd = Triangle_ClipAgainstPlane({ 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, test, clipped[0], clipped[1]); break;
-                        case 1: nTrisToAdd = Triangle_ClipAgainstPlane({ 0.0f, (float)ScreenHeight() - 1, 0.0f }, { 0.0f, -1.0f, 0.0f }, test, clipped[0], clipped[1]); break;
-                        case 2: nTrisToAdd = Triangle_ClipAgainstPlane({ 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, test, clipped[0], clipped[1]); break;
-                        case 3: nTrisToAdd = Triangle_ClipAgainstPlane({ (float)ScreenWidth() - 1, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }, test, clipped[0], clipped[1]); break;
+                        case 0:	nTrisToAdd = Triangle_ClipAgainstPlane({ 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, test, clipped[0], clipped[1]); break;
+                        case 1:	nTrisToAdd = Triangle_ClipAgainstPlane({ 0.0f, (float)ScreenHeight() - 1, 0.0f }, { 0.0f, -1.0f, 0.0f }, test, clipped[0], clipped[1]); break;
+                        case 2:	nTrisToAdd = Triangle_ClipAgainstPlane({ 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, test, clipped[0], clipped[1]); break;
+                        case 3:	nTrisToAdd = Triangle_ClipAgainstPlane({ (float)ScreenWidth() - 1, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }, test, clipped[0], clipped[1]); break;
                     }
                     //n number of new triangles so we add to back list to clip
                     for (int w = 0; w < nTrisToAdd; w++)
@@ -591,7 +535,7 @@ public:
 
             for (auto& t : listTriangles)
             {
-                FillTriangle(t.p[0].x, t.p[0].y, t.p[1].x, t.p[1].y, t.p[2].y, t.sym, t.col);
+                FillTriangle(t.p[0].x, t.p[0].y, t.p[1].x, t.p[1].y, t.p[2].x, t.p[2].y, t.sym, t.col);
             }
 
         }
