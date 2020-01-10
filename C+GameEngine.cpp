@@ -3,6 +3,12 @@
 #include <strstream>
 #include <algorithm>
 
+struct vec2d
+{
+    float u = 0;
+    float v = 0;
+    float w = 1;
+};
 struct vec3d
 {
     //base of triangle coords
@@ -13,6 +19,7 @@ struct triangle
 {
     //triangle consists of three points
     vec3d p[3]; 
+    vec2d t[3];
     wchar_t sym;
     short col; 
 };
@@ -250,13 +257,13 @@ private:
         return v;
     }
 
-    vec3d Vector_IntersectPlane(vec3d& plane_p, vec3d& plane_n, vec3d& lineStart, vec3d& lineEnd)
+    vec3d Vector_IntersectPlane(vec3d& plane_p, vec3d& plane_n, vec3d& lineStart, vec3d& lineEnd, float &t)
     {
         plane_n = Vector_Normalise(plane_n);
         float plane_d = -Vector_DotProduct(plane_n, plane_p);
         float ad = Vector_DotProduct(lineStart, plane_n);
         float bd = Vector_DotProduct(lineEnd, plane_n);
-        float t = (-plane_d - ad) / (bd - ad);
+        t = (-plane_d - ad) / (bd - ad);
         vec3d lineStartToEnd = Vector_Sub(lineEnd, lineStart);
         vec3d lineToIntersect = Vector_Mul(lineStartToEnd, t);
         return Vector_Add(lineStart, lineToIntersect);
@@ -274,19 +281,21 @@ private:
         //Two arrays to classify if point is in the inside or outside of plane
         vec3d* inside_points[3];  int nInsidePointCount = 0;
         vec3d* outside_points[3]; int nOutsidePointCount = 0;
-        
+        vec2d* inside_tex[3]; int nInsideTexCount = 0;
+        vec2d* outside_tex[3]; int nOutsideTexCount = 0;
+
         //signed distance from each point
         float d0 = dist(in_tri.p[0]);
         float d1 = dist(in_tri.p[1]);
         float d2 = dist(in_tri.p[2]);
 
-        if (d0 >= 0) { inside_points[nInsidePointCount++] = &in_tri.p[0]; }
-        else { outside_points[nOutsidePointCount++] = &in_tri.p[0]; }
-        if (d1 >= 0) { inside_points[nInsidePointCount++] = &in_tri.p[1]; }
-        else { outside_points[nOutsidePointCount++] = &in_tri.p[1]; }
-        if (d2 >= 0) { inside_points[nInsidePointCount++] = &in_tri.p[2]; }
-        else { outside_points[nOutsidePointCount++] = &in_tri.p[2]; }
-
+        if (d0 >= 0) { inside_points[nInsidePointCount++] = &in_tri.p[0]; inside_tex[nInsideTexCount++] = &in_tri.t[0]; }
+        else { outside_points[nOutsidePointCount++] = &in_tri.p[0]; outside_tex[nOutsideTexCount++] = &in_tri.t[0]; }
+        if (d1 >= 0) { inside_points[nInsidePointCount++] = &in_tri.p[1]; inside_tex[nInsideTexCount++] = &in_tri.t[1]; }
+        else { outside_points[nOutsidePointCount++] = &in_tri.p[1];  outside_tex[nOutsideTexCount++] = &in_tri.t[1]; }
+        if (d2 >= 0) { inside_points[nInsidePointCount++] = &in_tri.p[2]; inside_tex[nInsideTexCount++] = &in_tri.t[2]; }
+        else { outside_points[nOutsidePointCount++] = &in_tri.p[2];  outside_tex[nOutsideTexCount++] = &in_tri.t[2]; }
+        
         //four outcomes for classifying tirangle points into smaller triangle outputs
 
         if (nInsidePointCount == 0)
@@ -306,9 +315,16 @@ private:
             out_tri1.col = in_tri.col;
             out_tri1.sym = in_tri.sym;
             out_tri1.p[0] = *inside_points[0]; //Valid point
+            out_tri1.t[0] = *inside_tex[0];
 
-            out_tri1.p[1] = Vector_IntersectPlane(plane_p, plane_n, *inside_points[0], *outside_points[0]);
-            out_tri1.p[2] = Vector_IntersectPlane(plane_p, plane_n, *inside_points[0], *outside_points[1]);
+            float t;
+            out_tri1.p[1] = Vector_IntersectPlane(plane_p, plane_n, *inside_points[0], *outside_points[0], t);
+            out_tri1.t[1].u = t * (outside_tex[0]->u - inside_tex[0]->u) + inside_tex[0]->u;
+            out_tri1.t[1].v = t * (outside_tex[0]->v - inside_tex[0]->v) + inside_tex[0]->v;
+
+            out_tri1.p[2] = Vector_IntersectPlane(plane_p, plane_n, *inside_points[0], *outside_points[1], t);
+            out_tri1.t[2].u = t * (outside_tex[0]->u - inside_tex[0]->u) + inside_tex[0]->u;
+            out_tri1.t[2].v = t * (outside_tex[0]->v - inside_tex[0]->v) + inside_tex[0]->v;
             return 1; //smaller new triangle
         }
         if (nInsidePointCount == 2 && nOutsidePointCount == 1)
@@ -322,12 +338,15 @@ private:
             //two inside points and one point determined
             out_tri1.p[0] = *inside_points[0];
             out_tri1.p[1] = *inside_points[1];
-            out_tri1.p[2] = Vector_IntersectPlane(plane_p, plane_n, *inside_points[0], *outside_points[0]);
+            out_tri1.t[0] = *inside_tex[0];
+            out_tri1.t[1] = *inside_tex[1];
+            float t;
+            out_tri1.p[2] = Vector_IntersectPlane(plane_p, plane_n, *inside_points[0], *outside_points[0], t);
 
             //other tirangle with outside points and  one determined
             out_tri2.p[0] = *inside_points[1];
             out_tri2.p[1] = out_tri1.p[2];
-            out_tri2.p[2] = Vector_IntersectPlane(plane_p, plane_n, *inside_points[1], *outside_points[0]);
+            out_tri2.p[2] = Vector_IntersectPlane(plane_p, plane_n, *inside_points[1], *outside_points[0], t);
 
             return 2;//returns quad triangles
         }
@@ -369,7 +388,35 @@ private:
 public:
     bool OnUserCreate() override
     {
-        meshCube.LoadFromObjectFile("mountains.obj");
+       // meshCube.LoadFromObjectFile("mountains.obj"); //teapot or mountains
+        meshCube.tris =
+        {
+            // SOUTH cube
+            { 0.0f, 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 0.0f, 1.0f,    1.0f, 1.0f, 0.0f, 1.0f,		0.0f, 1.0f, 1.0f,		0.0f, 0.0f, 1.0f,		1.0f, 0.0f, 1.0f,},
+            { 0.0f, 0.0f, 0.0f, 1.0f,    1.0f, 1.0f, 0.0f, 1.0f,    1.0f, 0.0f, 0.0f, 1.0f,		0.0f, 1.0f, 1.0f,		1.0f, 0.0f, 1.0f,		1.0f, 1.0f, 1.0f,},
+            
+            // EAST cube     																			   
+            { 1.0f, 0.0f, 0.0f, 1.0f,    1.0f, 1.0f, 0.0f, 1.0f,    1.0f, 1.0f, 1.0f, 1.0f,		0.0f, 1.0f, 1.0f,		0.0f, 0.0f, 1.0f,		1.0f, 0.0f, 1.0f,},
+            { 1.0f, 0.0f, 0.0f, 1.0f,    1.0f, 1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 1.0f, 1.0f,		0.0f, 1.0f, 1.0f,		1.0f, 0.0f, 1.0f,		1.0f, 1.0f, 1.0f,},
+            
+            // NORTH cube       																			   
+            { 1.0f, 0.0f, 1.0f, 1.0f,    1.0f, 1.0f, 1.0f, 1.0f,    0.0f, 1.0f, 1.0f, 1.0f,		0.0f, 1.0f, 1.0f,		0.0f, 0.0f, 1.0f,		1.0f, 0.0f, 1.0f,},
+            { 1.0f, 0.0f, 1.0f, 1.0f,    0.0f, 1.0f, 1.0f, 1.0f,    0.0f, 0.0f, 1.0f, 1.0f,		0.0f, 1.0f, 1.0f,		1.0f, 0.0f, 1.0f,		1.0f, 1.0f, 1.0f,},
+            
+            // WEST cube      																			   
+            { 0.0f, 0.0f, 1.0f, 1.0f,    0.0f, 1.0f, 1.0f, 1.0f,    0.0f, 1.0f, 0.0f, 1.0f,		0.0f, 1.0f, 1.0f,		0.0f, 0.0f, 1.0f,		1.0f, 0.0f, 1.0f,},
+            { 0.0f, 0.0f, 1.0f, 1.0f,    0.0f, 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f, 1.0f,		0.0f, 1.0f, 1.0f,		1.0f, 0.0f, 1.0f,		1.0f, 1.0f, 1.0f,},
+            
+            // TOP cube       																			   
+            { 0.0f, 1.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f, 1.0f,    1.0f, 1.0f, 1.0f, 1.0f,		0.0f, 1.0f, 1.0f,		0.0f, 0.0f, 1.0f,		1.0f, 0.0f, 1.0f,},
+            { 0.0f, 1.0f, 0.0f, 1.0f,    1.0f, 1.0f, 1.0f, 1.0f,    1.0f, 1.0f, 0.0f, 1.0f,		0.0f, 1.0f, 1.0f,		1.0f, 0.0f, 1.0f,		1.0f, 1.0f, 1.0f,},
+            
+            // BOTTOM cube        																			  
+            { 1.0f, 0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 0.0f, 1.0f,		0.0f, 1.0f, 1.0f,		0.0f, 0.0f, 1.0f,		1.0f, 0.0f, 1.0f,},
+            { 1.0f, 0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 0.0f, 1.0f,    1.0f, 0.0f, 0.0f, 1.0f,		0.0f, 1.0f, 1.0f,		1.0f, 0.0f, 1.0f,		1.0f, 1.0f, 1.0f,},
+            
+        };
+
         matProj = Matrix_MakeProjection(90.0f, (float)ScreenHeight() / (float)ScreenWidth(), 0.1f, 1000.0f);
         return true;
 
@@ -418,6 +465,9 @@ public:
             triTransformed.p[0] = Matrix_MultiplyVector(matWorld, tri.p[0]);
             triTransformed.p[1] = Matrix_MultiplyVector(matWorld, tri.p[1]);
             triTransformed.p[2] = Matrix_MultiplyVector(matWorld, tri.p[2]);
+            triTransformed.t[0] = tri.t[0];
+            triTransformed.t[1] = tri.t[1];
+            triTransformed.t[2] = tri.t[2];
 
             vec3d normal, line1, line2;
             line1 = Vector_Sub(triTransformed.p[1], triTransformed.p[0]);
@@ -445,6 +495,9 @@ public:
                 triViewed.p[2] = Matrix_MultiplyVector(matView, triTransformed.p[2]);
                 triViewed.sym = triTransformed.sym;
                 triViewed.col = triTransformed.col;
+                triViewed.t[0] = triTransformed.t[0];
+                triViewed.t[1] = triTransformed.t[1];
+                triViewed.t[2] = triTransformed.t[2];
 
                 //Clipping triangle from the plane
                 int nClippedTriangles = 0;
@@ -460,6 +513,9 @@ public:
                     triProjected.p[2] = Matrix_MultiplyVector(matProj, clipped[n].p[2]);
                     triProjected.col = clipped[n].col;
                     triProjected.sym = clipped[n].sym;
+                    triProjected.t[0] = clipped[n].t[0];
+                    triProjected.t[1] = clipped[n].t[1];
+                    triProjected.t[2] = clipped[n].t[2];
 
                     //Scaling
                     triProjected.p[0] = Vector_Div(triProjected.p[0], triProjected.p[0].w);
@@ -535,7 +591,8 @@ public:
 
             for (auto& t : listTriangles)
             {
-                FillTriangle(t.p[0].x, t.p[0].y, t.p[1].x, t.p[1].y, t.p[2].x, t.p[2].y, t.sym, t.col);
+                //FillTriangle(t.p[0].x, t.p[0].y, t.p[1].x, t.p[1].y, t.p[2].x, t.p[2].y, t.sym, t.col);
+                DrawTriangle(t.p[0].x, t.p[0].y, t.p[1].x, t.p[1].y, t.p[2].x, t.p[2].y, PIXEL_SOLID, FG_WHITE);
             }
 
         }

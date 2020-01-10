@@ -2,12 +2,12 @@
 C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\olcConsoleGameEngine.h(759,1): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\olcConsoleGameEngine.h(1099,1): warning C4267: 'return': conversion from 'size_t' to 'unsigned int', possible loss of data
 C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\olcConsoleGameEngine.h(1196,1): warning C4312: 'type cast': conversion from 'DWORD' to 'olcConsoleGameEngine *' of greater size
-C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(533,1): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(538,86): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(538,76): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(538,66): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(538,56): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(538,46): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(538,36): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(334): warning C4715: 'olcEngine3D::Triangle_ClipAgainstPlane': not all control paths return a value
+C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(589,1): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(595,86): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(595,76): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(595,66): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(595,56): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(595,46): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(595,36): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\C+GameEngine.cpp(353): warning C4715: 'olcEngine3D::Triangle_ClipAgainstPlane': not all control paths return a value
   C+GameEngine.vcxproj -> C:\Users\xxchr\Desktop\Project\C++GameEngine\C+GameEngine\3DRenderingEngine\x64\Debug\C+GameEngine.exe
