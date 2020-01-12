@@ -425,10 +425,12 @@ private:
 		c.Char.UnicodeChar = sym;
 		return c;
 	}
+    float* pDepthBuffer = nullptr;
 
 public:
     bool OnUserCreate() override
     {
+        pDepthBuffer = new float[ScreenWidth() * ScreenHeight()];
        // meshCube.LoadFromObjectFile("mountains.obj"); //teapot or mountains
         meshCube.tris =
         {
@@ -600,14 +602,20 @@ public:
             }
         }
         //sorting back to front
-        sort(vecTrianglesToRaster.begin(), vecTrianglesToRaster.end(), [](triangle& t1, triangle& t2)
+        /*sort(vecTrianglesToRaster.begin(), vecTrianglesToRaster.end(), [](triangle& t1, triangle& t2)
             {
                 float z1 = (t1.p[0].z + t1.p[1].z + t1.p[2].z) / 3.0f;
                 float z2 = (t2.p[0].z + t2.p[1].z + t2.p[2].z) / 3.0f;
                 return z1 > z2;
-            });
-        //Clear, making clean slate
+            });*/
+
+        //Clear, making clean slate buffer and screen
         Fill(0, 0, ScreenWidth(), ScreenHeight(), PIXEL_SOLID, FG_BLACK);
+        for (int i = 0; i < ScreenWidth() * ScreenHeight(); i++) //using this, you should disable sorting triangles
+        {
+            pDepthBuffer[i] = 0.0f;
+        }
+
 
         for (auto& triToRaster : vecTrianglesToRaster)
         {
@@ -788,8 +796,11 @@ public:
                 {
                     tex_u = (1.0f - t) * tex_su + t * tex_eu;
                     tex_v = (1.0f - t) * tex_sv + t * tex_ev;
-                    Draw(j, i, tex->SampleGlyph(tex_u, tex_v), tex->SampleColour(tex_u, tex_v));
-
+                    if (tex_w > pDepthBuffer[i * ScreenWidth() + j]) //checking if there are more pixels in front of texture
+                    {
+                        Draw(j, i, tex->SampleGlyph(tex_u / tex_w, tex_v / tex_w), tex->SampleColour(tex_u / tex_w, tex_v / tex_w));
+                        pDepthBuffer[i * ScreenWidth() + j] = tex_w;
+                    }
                     t += tstep;
                 }
             }
