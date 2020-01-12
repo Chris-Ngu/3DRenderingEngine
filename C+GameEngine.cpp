@@ -6,13 +6,13 @@
 
 struct vec2d
 {
-    float u, v = 0;
+    float u, v = u = 0;
     float w = 1;
 };
 struct vec3d
 {
     //base of triangle coords
-    float x, y, z = 0;
+    float x, y, z = y = x = 0;
     float w = 1; //Need this for matrix multiplication
 };
 struct triangle
